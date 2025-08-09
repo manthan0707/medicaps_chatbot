@@ -1,0 +1,27 @@
+
+#chat-box {
+    height: 400px;
+    overflow-y: auto;
+}
+.user-msg {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    margin: 5px 0;
+    text-align: right;
+}
+.bot-msg {
+    background-color: #f1f1f1;
+    padding: 8px 12px;
+    border-radius: 20px;
+    margin: 5px 0;
+    text-align: left;
+}
+.dark-mode {
+    background-color: #1e1e1e !important;
+    color: white !important;
+}
+.dark-mode .bot-msg {
+    background-color: #333;
+}
