@@ -1,31 +1,50 @@
 
-function appendMessage(content, sender) {
-    const chatBox = document.getElementById("chat-box");
-    const msgDiv = document.createElement("div");
-    msgDiv.className = sender === "user" ? "user-msg" : "bot-msg";
-    msgDiv.textContent = content;
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const themeBtn = document.getElementById('themeBtn');
+let dark=false;
+
+function append(text, who='bot', html=false){
+  const div = document.createElement('div');
+  div.className = 'msg ' + (who==='user' ? 'user' : 'bot');
+  if(html) div.innerHTML = text; else div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
 
-function sendMessage() {
-    const userInput = document.getElementById("user-input");
-    const message = userInput.value.trim();
-    if (message === "") return;
-    appendMessage(message, "user");
-    userInput.value = "";
-
-    fetch("/get", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ msg: message })
-    })
-    .then(res => res.json())
-    .then(data => {
-        appendMessage(data.reply, "bot");
-    });
+function appendTyping(){
+  const d = document.createElement('div');
+  d.className='msg bot';
+  d.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+  return d;
 }
 
-function toggleTheme() {
-    document.getElementById("theme").classList.toggle("dark-mode");
+async function send(){
+  const text = input.value.trim();
+  if(!text) return;
+  append(text,'user');
+  input.value='';
+  const t = appendTyping();
+
+  try{
+    const res = await fetch('/chat', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const data = await res.json();
+    t.remove();
+    append(data.reply,'bot', false);
+  }catch(e){
+    t.remove();
+    append('Error connecting to server.','bot');
+  }
 }
+
+sendBtn.addEventListener('click', send);
+input.addEventListener('keydown',(e)=>{ if(e.key==='Enter') send(); });
+
+themeBtn.addEventListener('click', ()=>{
+  dark = !dark;
+  document.body.classList.toggle('dark-mode', dark);
+  themeBtn.textContent = dark ? 'Light' : 'Dark';
+});

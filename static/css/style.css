@@ -1,27 +1,14 @@
 
-#chat-box {
-    height: 400px;
-    overflow-y: auto;
-}
-.user-msg {
-    background-color: #007bff;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    margin: 5px 0;
-    text-align: right;
-}
-.bot-msg {
-    background-color: #f1f1f1;
-    padding: 8px 12px;
-    border-radius: 20px;
-    margin: 5px 0;
-    text-align: left;
-}
-.dark-mode {
-    background-color: #1e1e1e !important;
-    color: white !important;
-}
-.dark-mode .bot-msg {
-    background-color: #333;
-}
+body{background:#f4f6f9;font-family:Inter,Arial,Helvetica,sans-serif}
+#chat{background:linear-gradient(180deg,#fff,#f8fbff);}
+.msg{max-width:78%;padding:10px;border-radius:12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.msg.user{margin-left:auto;background:#0d6efd;color:#fff;border-bottom-right-radius:2px}
+.msg.bot{margin-right:auto;background:#eef2ff;color:#0b2240;border-bottom-left-radius:2px}
+.meta{font-size:11px;color:#666;margin-top:4px}
+.typing{width:40px;height:10px;display:inline-block}
+.typing span{display:inline-block;width:8px;height:8px;margin-right:4px;background:#ccc;border-radius:50%;animation: blink 1s infinite}
+@keyframes blink{0%{opacity:0.2}50%{opacity:1}100%{opacity:0.2}}
+.card-header h4{font-weight:600}
+.dark-mode body, .dark-mode #chat{background:#0f1720}
+.dark-mode .msg.user{background:#0b5ed7}
+.dark-mode .msg.bot{background:#1f2937;color:#e6eef8}
