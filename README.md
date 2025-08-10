@@ -1,22 +1,26 @@
 
-Medicaps University Chatbot (Enhanced)
+Medicaps Chatbot (Selenium version)
 
-This package includes:
-- Live web-scraping for placements, admissions, and about sections
-- Expanded FAQs (fallback)
-- Optional OpenAI integration (set OPENAI_API_KEY to enable)
-- Responsive, attractive UI with quick links and dark mode
-- render.yaml for Render deployment
+Files:
+- app_selenium.py   : Flask app that uses Selenium to scrape live data
+- faqs.json         : fallback FAQs
+- templates/index.html, static/* : frontend files
+- requirements.txt  : Python packages
 
-Run locally:
-1. unzip
-2. python -m venv venv
-3. source venv/bin/activate   # or venv\Scripts\activate on Windows
-4. pip install -r requirements.txt
-5. python app.py
-6. Open http://127.0.0.1:5000/
+Steps to run locally:
+1. Create and activate a virtualenv:
+   python -m venv venv
+   source venv/bin/activate   # Linux/Mac
+   venv\Scripts\activate    # Windows PowerShell
+2. Install dependencies:
+   pip install -r requirements.txt
+3. Download Chromedriver matching your Chrome version: https://chromedriver.chromium.org/downloads
+   - Put chromedriver executable in PATH or set CHROMEDRIVER_PATH env var to its path.
+4. Run:
+   python app_selenium.py
+5. Open http://127.0.0.1:5000/ and try queries: placement, admission, about medicaps
 
-Deploy to Render:
-- Push to GitHub and connect repo to Render (use render.yaml blueprint)
-- Set OPENAI_API_KEY in Render environment if you want AI responses
-- Set CACHE_TTL_SECONDS to control scrape caching
+Notes:
+- Selenium opens a headless browser to render dynamic content; it's best for pages that load data via JavaScript.
+- Use CACHE_TTL_SECONDS env var to control caching (default 300 seconds).
+- For deployment to cloud, Selenium requires additional setup (browsers, drivers). Local run is recommended for simplicity.

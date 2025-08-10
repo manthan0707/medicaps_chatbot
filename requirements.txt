@@ -1,5 +1,4 @@
 flask
-requests
+selenium
 beautifulsoup4
-openai
-gunicorn
+requests
