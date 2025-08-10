@@ -4,30 +4,48 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Medicaps University Chatbot (Live)</title>
+  <title>Medicaps University Chatbot (Enhanced)</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css"/>
 </head>
 <body>
   <div class="container py-4">
-    <div class="card mx-auto shadow-sm" style="max-width:900px;">
+    <div class="card mx-auto shadow-sm" style="max-width:1000px;">
       <div class="card-header d-flex justify-content-between align-items-center">
         <div>
           <h4 class="mb-0">Medicaps University Chatbot</h4>
-          <small class="text-muted">Live data + AI (optional)</small>
+          <small class="text-muted">Live info (scraped) + FAQ + AI (optional)</small>
         </div>
         <div>
           <button id="themeBtn" class="btn btn-outline-secondary btn-sm">Dark</button>
         </div>
       </div>
-      <div class="card-body p-0 d-flex flex-column" style="height:600px;">
-        <div id="chat" class="p-3 overflow-auto flex-grow-1"></div>
-        <div class="p-3 border-top">
-          <div class="input-group">
-            <input id="input" class="form-control" placeholder="Ask about placement, admission, courses..." aria-label="Message">
-            <button id="sendBtn" class="btn btn-primary">Send</button>
+      <div class="card-body p-0 d-flex flex-column" style="height:680px;">
+        <div class="row g-0 flex-grow-1">
+          <div class="col-md-8 border-end p-3 d-flex flex-column" style="min-height:0;">
+            <div id="chat" class="p-2 overflow-auto flex-grow-1"></div>
+            <div class="p-2 border-top">
+              <div class="input-group">
+                <input id="input" class="form-control" placeholder="Ask about placement, admission, courses..." aria-label="Message">
+                <button id="sendBtn" class="btn btn-primary">Send</button>
+              </div>
+              <small class="text-muted">Try: "placement", "placement 2024", "admission", "about medicaps"</small>
+            </div>
           </div>
-          <small class="text-muted">Try: "placement", "placement 2024", "admission", "about medicaps"</small>
+          <div class="col-md-4 p-3">
+            <h6>Quick Links</h6>
+            <ul class="list-unstyled">
+              <li><button class="btn btn-sm btn-link quick" data-q="placement">Live Placement</button></li>
+              <li><button class="btn btn-sm btn-link quick" data-q="admission">Admission Info</button></li>
+              <li><button class="btn btn-sm btn-link quick" data-q="about medicaps">About Medicaps</button></li>
+              <li><button class="btn btn-sm btn-link quick" data-q="contact">Contact</button></li>
+            </ul>
+            <hr/>
+            <h6>Contact</h6>
+            <p class="mb-1">Admissions: +91-731-4259500</p>
+            <p class="mb-1">Email: info@medicaps.ac.in</p>
+            <p class="mb-1"><a href="https://www.medicaps.ac.in/" target="_blank">Official Website</a></p>
+          </div>
         </div>
       </div>
     </div>
