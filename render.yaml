@@ -1,14 +1,16 @@
 
 services:
   - type: web
-    name: medicaps-chatbot-enhanced
+    name: medicaps-chatbot-complete
     env: python
     branch: main
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     plan: free
     envVars:
+      - key: CHROMEDRIVER_PATH
+        value: ''
       - key: CACHE_TTL_SECONDS
-        value: 3600
+        value: 300
       - key: OPENAI_API_KEY
         value: ''
