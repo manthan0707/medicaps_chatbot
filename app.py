@@ -1,25 +1,25 @@
 
 from flask import Flask, render_template, request, jsonify
 import os, time, json
-import requests
 from bs4 import BeautifulSoup
 
-USE_OPENAI = bool(os.environ.get('OPENAI_API_KEY'))
-if USE_OPENAI:
-    try:
-        import openai
-        openai.api_key = os.environ.get('OPENAI_API_KEY')
-    except Exception as e:
-        print("OpenAI import failed:", e)
-        USE_OPENAI = False
+# Selenium imports
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import WebDriverException, TimeoutException
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
+# Load fallback FAQs
 with open(os.path.join(app.root_path, 'faqs.json'), 'r', encoding='utf-8') as f:
     FAQS = json.load(f)
 
+# Simple in-memory cache
 CACHE = {}
-CACHE_TTL = int(os.environ.get('CACHE_TTL_SECONDS', 3600))
+CACHE_TTL = int(os.environ.get('CACHE_TTL_SECONDS', 300))  # default 5 minutes
 
 def cached(key, fn):
     now = time.time()
@@ -29,36 +29,150 @@ def cached(key, fn):
     CACHE[key] = {'ts': now, 'data': data}
     return data
 
-def scrape(url, selectors=None, paragraphs=6):
+def make_driver():
+    drv_path = os.environ.get('CHROMEDRIVER_PATH', None)
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36")
     try:
-        r = requests.get(url, timeout=10)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        parts = []
-        if selectors:
-            for sel in selectors:
-                for el in soup.select(sel)[:paragraphs]:
-                    parts.append(el.get_text(' ',strip=True))
-        if not parts:
-            for p in soup.select('p')[:paragraphs]:
-                parts.append(p.get_text(' ',strip=True))
-        return ' \n\n '.join(parts)[:4000]
+        if drv_path:
+            driver = webdriver.Chrome(executable_path=drv_path, options=chrome_options)
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
+        return driver
     except Exception as e:
-        return f"ERROR: {e}"
+        raise WebDriverException(f"Error creating Chrome WebDriver: {e}")
 
-def get_placements():
+def wait_for_selectors(driver, selectors, timeout=15):
+    try:
+        for sel in selectors:
+            try:
+                WebDriverWait(driver, timeout).until(EC.presence_of_element_located((By.CSS_SELECTOR, sel)))
+                return True
+            except TimeoutException:
+                continue
+        return False
+    except Exception:
+        return False
+
+def scrape_placements():
     url = "https://www.medicaps.ac.in/placements"
-    data = cached('placements', lambda: scrape(url, selectors=['.placement','table','h2','h3','p'], paragraphs=10))
-    return data
+    try:
+        driver = make_driver()
+    except WebDriverException as e:
+        return {"error": str(e)}
+    try:
+        driver.get(url)
+        selectors = ["table", ".placement", ".placement-section", ".container", "h2", "h3"]
+        _ = wait_for_selectors(driver, selectors, timeout=12)
+        time.sleep(0.8)
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        parts = []
+        for header in soup.select("h1, h2, h3"):
+            text = header.get_text(strip=True)
+            if text:
+                nxt = header.find_next(["p", "div", "span"])
+                if nxt and nxt.get_text(strip=True):
+                    parts.append(f"{text} - {nxt.get_text(' ', strip=True)[:700]}")
+        if not parts:
+            for p in soup.select("p")[:12]:
+                parts.append(p.get_text(" ", strip=True)[:600])
+        rows = []
+        table = soup.find("table")
+        if table:
+            for tr in table.find_all("tr")[1:12]:
+                cols = [td.get_text(" ", strip=True) for td in tr.find_all(["td","th"])]
+                if cols:
+                    rows.append(" | ".join(cols))
+        return {"summary": "\n\n".join(parts)[:4000], "rows": rows}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        try:
+            driver.quit()
+        except:
+            pass
 
-def get_admissions():
+def scrape_admissions():
     url = "https://www.medicaps.ac.in/admission-24-25.php"
-    data = cached('admissions', lambda: scrape(url, selectors=['.admission','h2','h3','p','ul'], paragraphs=12))
-    return data
+    try:
+        driver = make_driver()
+    except WebDriverException as e:
+        return {"error": str(e)}
+    try:
+        driver.get(url)
+        selectors = ["#content", ".admission", "h2", "h3", "table"]
+        _ = wait_for_selectors(driver, selectors, timeout=12)
+        time.sleep(0.6)
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        parts = []
+        for header in soup.select("h2, h3, h4"):
+            txt = header.get_text(strip=True)
+            if txt:
+                nxts = []
+                for sib in header.find_next_siblings():
+                    if sib.name in ['p','ul','div']:
+                        nxts.append(sib.get_text(" ", strip=True)[:500])
+                    if len(nxts) >= 4:
+                        break
+                if nxts:
+                    parts.append(f"{txt} - {' '.join(nxts)}")
+        if not parts:
+            for p in soup.select("p")[:12]:
+                parts.append(p.get_text(" ", strip=True)[:500])
+        tables = []
+        for table in soup.find_all("table")[:2]:
+            rows = []
+            for tr in table.find_all("tr"):
+                cols = [td.get_text(" ", strip=True) for td in tr.find_all(["td","th"])]
+                if cols:
+                    rows.append(" | ".join(cols))
+            if rows:
+                tables.append(rows)
+        return {"summary": "\n\n".join(parts)[:4000], "tables": tables}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        try:
+            driver.quit()
+        except:
+            pass
 
-def get_about():
+def scrape_about():
     url = "https://www.medicaps.ac.in/about"
-    data = cached('about', lambda: scrape(url, selectors=['.about','h2','h3','p'], paragraphs=12))
-    return data
+    try:
+        driver = make_driver()
+    except WebDriverException as e:
+        return {"error": str(e)}
+    try:
+        driver.get(url)
+        selectors = ["main", ".about", "h2", "h3", "p"]
+        _ = wait_for_selectors(driver, selectors, timeout=10)
+        time.sleep(0.5)
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        main = soup.find("main") or soup.find("section") or soup
+        paras = main.select("p")[:12]
+        if paras:
+            about = " ".join([p.get_text(" ", strip=True) for p in paras])
+            return {"about": about[:4000]}
+        div = soup.find("div", class_=lambda x: x and 'about' in x.lower() if x else False)
+        if div:
+            return {"about": div.get_text(" ", strip=True)[:4000]}
+        return {"about": soup.get_text(" ", strip=True)[:2000]}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        try:
+            driver.quit()
+        except:
+            pass
 
 def faq_lookup(msg):
     m = msg.lower()
@@ -66,17 +180,6 @@ def faq_lookup(msg):
         if k in m:
             return v
     return None
-
-def ai_response(user_msg, context=''):
-    if not USE_OPENAI:
-        return None
-    try:
-        prompt = f"""You are an assistant for Medicaps University. Use the context to answer the user's question concisely. Context:\n{context}\n\nUser: {user_msg}\n\nAnswer:"""
-        res = openai.ChatCompletion.create(model='gpt-3.5-turbo', messages=[{'role':'user','content':prompt}], max_tokens=300)
-        return res.choices[0].message.content.strip()
-    except Exception as e:
-        print('OpenAI error', e)
-        return None
 
 @app.route('/')
 def index():
@@ -89,44 +192,40 @@ def chat():
     if not msg:
         return jsonify({'reply':'Please type something.'})
     low = msg.lower()
-
     if any(w in low for w in ['placement','package','placements','highest','average']):
-        ctx = get_placements()
-        ai = ai_response(msg, ctx) or ctx
-        return jsonify({'reply': ai})
+        d = cached('placements', scrape_placements)
+        if 'error' in d:
+            base = faq_lookup(low) or "Couldn't fetch live placement data right now."
+            return jsonify({'reply': base})
+        resp = d.get('summary','') or 'No placement summary available.'
+        rows = d.get('rows',[])
+        if rows:
+            resp += "\n\nRecent rows:\n" + "\n".join(rows)
+        return jsonify({'reply': resp})
 
     if any(w in low for w in ['admission','apply','eligibility','deadline','important date','last date']):
-        ctx = get_admissions()
-        ai = ai_response(msg, ctx) or ctx
-        return jsonify({'reply': ai})
+        d = cached('admissions', scrape_admissions)
+        if 'error' in d:
+            base = faq_lookup(low) or "Couldn't fetch admission info right now."
+            return jsonify({'reply': base})
+        resp = d.get('summary','') or 'No admission info available.'
+        tables = d.get('tables', [])
+        if tables:
+            resp += "\n\nTables:\n" + "\n\n".join(["\n".join(t) for t in tables])
+        return jsonify({'reply': resp})
 
     if any(w in low for w in ['about','who are you','overview','university info','about medicaps']):
-        ctx = get_about()
-        ai = ai_response(msg, ctx) or ctx
-        return jsonify({'reply': ai})
+        d = cached('about', scrape_about)
+        if 'error' in d:
+            base = faq_lookup(low) or "Couldn't fetch about info right now."
+            return jsonify({'reply': base})
+        return jsonify({'reply': d.get('about','No about info found.')})
 
     faq = faq_lookup(low)
     if faq:
         return jsonify({'reply': faq})
 
-    # fallback: combine about+placements
-    ctx = get_about() + " \n\n " + get_placements()
-    ai = ai_response(msg, ctx)
-    if ai:
-        return jsonify({'reply': ai})
-    return jsonify({'reply': "Sorry, I couldn't find that. Try asking about 'placement', 'admission', or 'about medicaps'."})
-
-@app.route('/placement', methods=['GET'])
-def placement_api():
-    return jsonify({'data': get_placements()})
-
-@app.route('/admission', methods=['GET'])
-def admission_api():
-    return jsonify({'data': get_admissions()})
-
-@app.route('/aboutapi', methods=['GET'])
-def about_api():
-    return jsonify({'data': get_about()})
+    return jsonify({'reply': "Sorry, I don't have that information. Try 'placement' or 'admission'."})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
