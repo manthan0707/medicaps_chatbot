@@ -1,13 +1,7 @@
 
-body{background:#f4f6f9;font-family:Inter,Arial,Helvetica,sans-serif}
-.card{border-radius:12px}
-#chat{background:linear-gradient(180deg,#fff,#f8fbff);padding:12px;border-radius:8px;height:100%;}
-.msg{max-width:86%;padding:12px;border-radius:14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(13,38,59,0.06);line-height:1.4}
+body{background:#f4f6f9;font-family:Arial,Helvetica,sans-serif}
+.card{border-radius:10px}
+#chat{background:#fff;padding:10px;border-radius:8px;height:100%;overflow:auto}
+.msg{max-width:80%;padding:10px;border-radius:10px;margin-bottom:10px}
 .msg.user{margin-left:auto;background:#0d6efd;color:#fff}
 .msg.bot{margin-right:auto;background:#eef2ff;color:#0b2240}
-.typing{width:56px;height:14px;display:inline-block}
-.typing span{display:inline-block;width:10px;height:10px;margin-right:6px;background:#ccc;border-radius:50%;animation: blink 1s infinite}
-@keyframes blink{0%{opacity:0.2}50%{opacity:1}100%{opacity:0.2}}
-.dark-mode body, .dark-mode #chat{background:#071028}
-.dark-mode .msg.user{background:#0b5ed7}
-.dark-mode .msg.bot{background:#122032;color:#e6eef8}

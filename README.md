@@ -1,47 +1,35 @@
 
-Medicaps Chatbot — Complete
+Medicaps Chatbot (API-style) - FastAPI
 
 Overview
 --------
-This project provides a responsive web chatbot that scrapes Medicaps University site for live placement, admission, and about information. It includes a fallback FAQ, optional OpenAI enrichment, and uses Selenium (headless Chrome) with explicit waits to handle JavaScript-loaded pages.
+This project provides a simple API-based chatbot for Medicaps University.
+It exposes API endpoints and a frontend UI that calls them.
 
-Files
------
-- app.py                : Flask backend (Selenium scrapers + chat endpoints)
-- templates/index.html  : Frontend UI (Bootstrap)
-- static/css/style.css  : Styles
-- static/js/script.js   : Frontend JS
-- faqs.json             : Local fallback FAQ data
-- requirements.txt      : Python dependencies
-- render.yaml           : Render blueprint
-- README.md             : This file
+Features
+--------
+- /chat (POST) : send {'message':'...'} and get {'reply':'...'}
+- /api/placements, /api/admissions, /api/about : GET endpoints returning scraped JSON
+- Uses requests-based scraping by default; set USE_SELENIUM=1 env var to use Selenium (requires ChromeDriver)
 
 Setup (local)
 -------------
 1. Create & activate virtualenv:
    python3 -m venv venv
    source venv/bin/activate   # Linux/Mac
-   venv\Scripts\activate    # Windows PowerShell
-
-2. Install packages:
+2. Install deps:
    pip install -r requirements.txt
+3. Run:
+   uvicorn app:app --reload --port 8000
+   Open http://127.0.0.1:8000/
 
-3. Download ChromeDriver that matches your Chrome browser version:
-   https://chromedriver.chromium.org/downloads
-   - Place the executable in your PATH or set CHROMEDRIVER_PATH to its full path:
-     export CHROMEDRIVER_PATH="/home/user/chromedriver"   # Linux/Mac
-     $env:CHROMEDRIVER_PATH = "C:\tools\chromedriver.exe"  # Windows PowerShell
-
-4. (Optional) Set OpenAI API key to enable AI-enriched replies:
-   export OPENAI_API_KEY="sk-..."
-
-5. Run:
-   python app.py
-   Open http://127.0.0.1:5000/
+Using Selenium (optional)
+-------------------------
+- Install ChromeDriver and set CHROMEDRIVER_PATH if needed.
+- Set environment variable USE_SELENIUM=1 before running.
+- Selenium requires ChromeDriver binary compatible with installed Chrome.
 
 Notes
 -----
-- The scraper uses explicit waits to improve stability, but site structure changes may still require selector updates.
-- For production deployment, consider Playwright or a hosted browser solution that provides headless Chrome; Selenium+ChromeDriver requires extra server configuration.
-- Respect the target site's terms of service and use caching to reduce load on the site.
-
+- Scraping depends on the target site's structure; if it changes, selectors may need updates.
+- Cache TTL: change CACHE_TTL_SECONDS env var (default 300 seconds).

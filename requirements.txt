@@ -1,6 +1,5 @@
-flask
-selenium
-beautifulsoup4
+fastapi
+uvicorn
 requests
-openai
-gunicorn
+beautifulsoup4
+selenium
